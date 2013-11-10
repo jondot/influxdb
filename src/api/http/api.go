@@ -328,23 +328,15 @@ func (self *HttpServer) writePoints(w libhttp.ResponseWriter, r *libhttp.Request
 }
 
 type createDatabaseRequest struct {
-	Name   string `json:"name"`
-	ApiKey string `json:apiKey"`
-}
-
-type Database struct {
-	Name string `json:"name"`
+	Name              string `json:"name"`
+	ReplicationFactor uint8  `json:"replicationFactor"`
 }
 
 func (self *HttpServer) listDatabases(w libhttp.ResponseWriter, r *libhttp.Request) {
 	self.tryAsClusterAdmin(w, r, func(u common.User) (int, interface{}) {
-		dbNames, err := self.coordinator.ListDatabases(u)
+		databases, err := self.coordinator.ListDatabases(u)
 		if err != nil {
 			return libhttp.StatusUnauthorized, err.Error()
-		}
-		databases := make([]*Database, 0, len(dbNames))
-		for _, db := range dbNames {
-			databases = append(databases, &Database{db})
 		}
 		body, err := json.Marshal(databases)
 		if err != nil {
@@ -365,7 +357,7 @@ func (self *HttpServer) createDatabase(w libhttp.ResponseWriter, r *libhttp.Requ
 		if err != nil {
 			return libhttp.StatusBadRequest, err.Error()
 		}
-		err = self.coordinator.CreateDatabase(user, createRequest.Name)
+		err = self.coordinator.CreateDatabase(user, createRequest.Name, createRequest.ReplicationFactor)
 		if err != nil {
 			return libhttp.StatusUnauthorized, err.Error()
 		}
